@@ -21,4 +21,7 @@ public interface KeyRepository extends JpaRepository <Key,String> {
     @Query("SELECT k FROM Key k WHERE k.returnTime < :thirtyMinutesAgo")
     List<Key> findLateKeys(@Param("thirtyMinutesAgo") LocalDateTime thirtyMinutesAgo);
 
+    @Query("SELECT k FROM Key k WHERE k.auditorium.id = :auditoriumId")
+    List<Key> findKeysByAuditoriumId(@Param("auditoriumId") Long auditoriumId);
+
 }

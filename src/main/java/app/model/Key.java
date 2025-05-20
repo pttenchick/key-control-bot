@@ -16,7 +16,11 @@ public class Key {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @ManyToOne
+    @JoinColumn(name = "auditorium_id")
+    private Auditorium auditorium;
+
+    @Column(nullable = false, name = "is_available")
     private boolean isAvailable;
 
     @ManyToOne

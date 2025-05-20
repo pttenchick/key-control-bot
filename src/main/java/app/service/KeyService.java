@@ -1,7 +1,10 @@
 package app.service;
+
 import app.model.KeyRequest;
+import app.repository.AuditoriumRepository;
 import app.repository.KeyRequestRepository;
 import app.utils.MessageHandler;
+import app.model.Auditorium;
 import app.model.Key;
 import app.model.User;
 import org.apache.logging.log4j.LogManager;
@@ -24,6 +27,8 @@ public class KeyService implements IKeyService{
     private static final Logger logger = LogManager.getLogger(KeyService.class);
 
     @Autowired
+    private AuditoriumRepository auditoriumRepository;
+    @Autowired
     private KeyRequestRepository requestRepository;
     @Autowired
     private KeyRepository keyRepository;
@@ -33,6 +38,7 @@ public class KeyService implements IKeyService{
     @Lazy
     private MessageHandler messageHandler;
 
+
     @Override
     public List<Key> getAllKeys() {
         logger.info("Сервис запрашивает все ключи");
@@ -41,7 +47,7 @@ public class KeyService implements IKeyService{
 
     @Override
     public Key getKeyById(Long keyId) {
-        logger.info("Сервис запрашивает все ключи");
+        logger.info("Сервис ключ: " + keyId);
         return keyRepository.findById(String.valueOf(keyId))
                 .orElseThrow(() -> new RuntimeException("Key not found")); // Получаем ключ по ID
     }
@@ -57,21 +63,40 @@ public class KeyService implements IKeyService{
     @Transactional
     public Key issueKey(Long keyId, Long userId) {
         logger.info("Сервис выдает ключ");
+
+        // Получаем запрос на ключ
         KeyRequest keyRequest = requestRepository.findByKeyId(keyId);
         Key key = getKeyById(keyId);
+
+        // Находим пользователя по ID
         User user = userRepository.findById(String.valueOf(userId))
                 .orElseThrow(() -> new RuntimeException("User  not found"));
 
+        // Получаем аудиторию, связанная с ключом
+        Auditorium auditorium = auditoriumRepository.findById(String.valueOf(key.getAuditorium().getId()))
+                .orElseThrow(() -> new RuntimeException("Auditorium not found"));
+
+
+        // Проверяем доступность ключа
         if (!key.isAvailable()) {
             logger.error("Ключ недоступен");
-            throw new RuntimeException("Key is not available"); // Если ключ недоступен, выбрасываем исключение
-
+            if (auditorium.getRentedKey() != null) {
+                logger.error("Ключ от аудитории выдан");
+                throw new RuntimeException("Key is not available");
+            }
         }
 
+
+        // Устанавливаем состояние ключа
         key.setAvailable(false);
         key.setUser (user);
         key.setReturnTime(keyRequest.getExpectedReturnTime());
-        return keyRepository.saveAndFlush(key); // Сохраняем изменения
+
+        // Обновляем арендованный ключ в аудитории
+        auditorium.setRentedKey(key);
+        auditoriumRepository.save(auditorium); // Сохраняем изменения в аудитории
+
+        return keyRepository.saveAndFlush(key); // Сохраняем изменения в ключе
     }
 
     @Override
