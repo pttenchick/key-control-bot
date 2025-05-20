@@ -1,5 +1,7 @@
 package app.service;
 
+import app.model.Auditorium;
+import app.repository.AuditoriumRepository;
 import lombok.RequiredArgsConstructor;
 import app.model.Key;
 import app.model.KeyRequest;
@@ -26,12 +28,16 @@ public class KeyRequestService {
     private  UserRepository userRepository;
     @Autowired
     private  KeyRepository keyRepository;
+    @Autowired
+    private AuditoriumRepository auditoriumRepository;
 
     @Transactional
     public void requestKey(Long userId, Long keyId, LocalDateTime dateTimeString) {
         User user = userRepository.findById(String.valueOf(userId))
                 .orElseThrow(() -> new RuntimeException("User  not found"));
         Key key = keyRepository.findById(String.valueOf(keyId))
+                .orElseThrow(() -> new RuntimeException("Key not found"));
+        Auditorium auditorium = auditoriumRepository.findById(String.valueOf(keyId))
                 .orElseThrow(() -> new RuntimeException("Key not found"));
 
         if (!key.isAvailable()) {
@@ -40,7 +46,7 @@ public class KeyRequestService {
 
         KeyRequest keyRequest = KeyRequest.builder()
                 .user(user)
-                .key(key)
+                .auditorium(auditorium)
                 .requestedAt(LocalDateTime.now())
                 .expectedReturnTime(dateTimeString)
                 .build();

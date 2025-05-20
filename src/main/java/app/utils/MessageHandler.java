@@ -127,8 +127,8 @@ public class MessageHandler {
                 List<KeyRequest> requestList = keyRequestService.getAllRequests();
                 for (KeyRequest request : requestList) {
                     String data = "Запрос N" + request.getId() + "\nПользователь " + request.getUser ().getUsername() +
-                            " запрашивает ключ " + request.getKey().getId() +
-                            " до " + request.getExpectedRerutnTimeInString() + "\n";
+                            " запрашивает ключ " + request.getAuditorium().getId() +
+                            " до " + request.getExpectedReturnTimeInString() + "\n";
                     sendMessage(String.valueOf(adminId), data);
                 }
             } else if (userMessage.startsWith("/accept_request")) {
@@ -137,7 +137,7 @@ public class MessageHandler {
                     Optional<KeyRequest> keyRequest = keyRequestService.findById(words[1]);
                     if (keyRequest.isPresent()) {
                         KeyRequest request = keyRequest.get();
-                        keyService.issueKey(request.getKey().getId(), request.getUser().getId());
+                        keyService.issueKey(request.getAuditorium().getId(), request.getUser().getId());
                         sendMessage(String.valueOf(adminId), "Выдача ключа подтверждена");
                         sendMessage(String.valueOf(request.getUser().getId()), "Выдан ключ");
                     }

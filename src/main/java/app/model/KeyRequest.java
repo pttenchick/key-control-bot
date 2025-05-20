@@ -4,6 +4,7 @@ import lombok.*;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 @Entity
 @Table(name = "key_request")
@@ -22,8 +23,8 @@ public class KeyRequest {
     private User user;
 
     @ManyToOne
-    @JoinColumn(name = "key_id")
-    private Key key;
+    @JoinColumn(name = "auditorium_id") // Изменено на auditorium_id
+    private Auditorium auditorium; // Связь с аудиторией
 
     @Column(name = "requested_at")
     private LocalDateTime requestedAt;
@@ -31,10 +32,10 @@ public class KeyRequest {
     @Column(name = "expected_return_time")
     private LocalDateTime expectedReturnTime;
 
-    public String getExpectedRerutnTimeInString(){
+    public String getExpectedReturnTimeInString() {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy");
-
         return this.expectedReturnTime.format(formatter);
     }
+
 
 }

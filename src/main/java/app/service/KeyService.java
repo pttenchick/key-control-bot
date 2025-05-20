@@ -64,55 +64,69 @@ public class KeyService implements IKeyService{
     public Key issueKey(Long keyId, Long userId) {
         logger.info("Сервис выдает ключ");
 
-        // Получаем запрос на ключ
-        KeyRequest keyRequest = requestRepository.findByKeyId(keyId);
         Key key = getKeyById(keyId);
+        if (key == null) {
+            throw new RuntimeException("Ключ не найден");
+        }
 
         // Находим пользователя по ID
         User user = userRepository.findById(String.valueOf(userId))
-                .orElseThrow(() -> new RuntimeException("User  not found"));
+                .orElseThrow(() -> new RuntimeException("Пользователь не найден"));
 
-        // Получаем аудиторию, связанная с ключом
+        // Получаем аудиторию, связанную с ключом
         Auditorium auditorium = auditoriumRepository.findById(String.valueOf(key.getAuditorium().getId()))
-                .orElseThrow(() -> new RuntimeException("Auditorium not found"));
-
+                .orElseThrow(() -> new RuntimeException("Аудитория не найдена"));
 
         // Проверяем доступность ключа
         if (!key.isAvailable()) {
             logger.error("Ключ недоступен");
-            if (auditorium.getRentedKey() != null) {
-                logger.error("Ключ от аудитории выдан");
-                throw new RuntimeException("Key is not available");
-            }
-        }
+            List<Key> allKeysByAuditorium = keyRepository.findKeysByAuditoriumId(auditorium.getId());
 
+            // Ищем первый доступный ключ
+            Key freeKey = allKeysByAuditorium.stream()
+                    .filter(Key::isAvailable)
+                    .findFirst()
+                    .orElseThrow(() -> new RuntimeException("Доступных ключей от аудитории нет"));
+
+            // Выдаем доступный ключ
+            freeKey.setAvailable(false);
+            freeKey.setUser (user);
+            freeKey.setReturnTime(LocalDateTime.now().plusDays(7)); // Пример: ожидаемое время возврата через неделю
+
+            return keyRepository.saveAndFlush(freeKey);
+        }
 
         // Устанавливаем состояние ключа
         key.setAvailable(false);
         key.setUser (user);
-        key.setReturnTime(keyRequest.getExpectedReturnTime());
+        key.setReturnTime(LocalDateTime.now().plusDays(7)); // Пример: ожидаемое время возврата через неделю
 
-        // Обновляем арендованный ключ в аудитории
-        auditorium.setRentedKey(key);
-        auditoriumRepository.save(auditorium); // Сохраняем изменения в аудитории
-
-        return keyRepository.saveAndFlush(key); // Сохраняем изменения в ключе
+        return keyRepository.saveAndFlush(key);
     }
+
 
     @Override
     @Transactional
     public Key returnKey(Long keyId) {
         logger.info("Сервис возвращает ключ");
-       requestRepository.deleteByKeyId(keyId);
         Key key = getKeyById(keyId);
+
+        // Проверяем, что ключ существует и доступен
+        if (key == null || key.isAvailable()) {
+            throw new RuntimeException("Ключ не найден или уже доступен");
+        }
+
+        // Возвращаем ключ
         key.setAvailable(true);
         key.setUser (null);
         key.setReturnTime(null);
         key.setTen(false);
         key.setNow(false);
         key.setLastThirty(false);
+
         return keyRepository.saveAndFlush(key);
     }
+
 
     @Scheduled(cron = "0 * * * * *")
     public void checkTimeKeys(){

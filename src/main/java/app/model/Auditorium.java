@@ -2,27 +2,30 @@ package app.model;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CollectionId;
 
 import java.util.List;
 
-@Data
-@Getter
-@Setter
-@AllArgsConstructor
-@NoArgsConstructor
+@Entity
 @Table(name = "auditoriums")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class Auditorium {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(nullable = false)
-    private String name;
+    private String name; // Название аудитории
 
-    @OneToMany(mappedBy = "id")
+    @OneToMany(mappedBy = "auditorium", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Key> keys; // Список ключей, связанных с аудиторией
 
-    @Column(name = "rented_key")
-    private Key rentedKey;
+    // Метод для получения доступных ключей из аудитории
+    public List<Key> getAvailableKeys() {
+        return keys.stream()
+                .filter(Key::isAvailable) // Фильтруем доступные ключи
+                .toList();
+    }
 }
