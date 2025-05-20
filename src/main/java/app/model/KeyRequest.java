@@ -23,8 +23,8 @@ public class KeyRequest {
     private User user;
 
     @ManyToOne
-    @JoinColumn(name = "auditorium_id") // Изменено на auditorium_id
-    private Auditorium auditorium; // Связь с аудиторией
+    @JoinColumn(name = "auditorium_id")
+    private Auditorium auditorium;
 
     @Column(name = "requested_at")
     private LocalDateTime requestedAt;

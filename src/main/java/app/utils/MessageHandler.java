@@ -2,10 +2,8 @@ package app.utils;
 
 import app.bot.TelegramLongPollingBot;
 import app.events.MessageReceivedEvent;
-import app.model.Key;
-import app.model.KeyRequest;
-import app.model.Role;
-import app.model.User;
+import app.model.*;
+import app.repository.AuditoriumRepository;
 import app.service.IKeyService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
@@ -25,6 +23,9 @@ import java.util.stream.Collectors;
 public class MessageHandler {
 
     private final long adminId = 1022433076;
+
+    @Autowired
+    private AuditoriumRepository auditoriumRepository;
 
     @Autowired
     private TelegramLongPollingBot bot;
@@ -70,7 +71,7 @@ public class MessageHandler {
                 + "/get_all_request - Получить список всех запросов\n"
                 + "/accept_request [номер запроса] - одобрить выдачу ключа\n"
                 + "/return_key [номер аудитории]\n"
-                    + "/request_key [номер аудитории] [время возврата ключа в формате HH:mm dd/MM/yyyy] - Запрос на выдачу ключа\n";
+                + "/request_key [номер аудитории] [время возврата ключа в формате HH:mm dd/MM/yyyy] - Запрос на выдачу ключа\n";
 
         String error = "Неизвестная команда, попробуйте заново!\n";
 
@@ -83,11 +84,12 @@ public class MessageHandler {
             }
         } else if (userMessage.startsWith("/request_key")) {
             String[] words = userMessage.split(" ");
-            long keyId = Long.parseUnsignedLong(words[1]);
+            long auditoriumId = Long.parseUnsignedLong(words[1]);
 
-                if (keyId < 9999) {
-                Key key = keyService.getKeyById(keyId);
-                    if(key.isAvailable()){
+                if (auditoriumId < 9999) {
+                    Key key = keyService.getAvailableKeys(auditoriumId);
+                    Auditorium auditorium = auditoriumRepository.getAuditoriumById(auditoriumId);
+                    if(!auditorium.getKeys().isEmpty()){
                         String time = words[2] + " " + words[3];
                         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy");
                         LocalDateTime dateTime = LocalDateTime.parse(time, formatter);
@@ -95,16 +97,15 @@ public class MessageHandler {
                         LocalDateTime now = LocalDateTime.now();
                         if (dateTime.isAfter(now.minusMinutes(10))) {
 
-                            keyRequestService.requestKey(user.getId(), keyId, dateTime);
+                            keyRequestService.requestKey(user.getId(), auditoriumId, dateTime);
                             sendMessage(chatId, "Запрос отправлен администратору");
                             sendMessage(String.valueOf(adminId), "Пришел новый запрос на выдачу ключа");
                         }
                         else {sendMessage(chatId, "Неправильный ввод даты, попробуйте отправить запрос заново");}
                     }
                     else {
-                        sendMessage(chatId, "Ключ занят, попробуйте позже");
+                        sendMessage(chatId, "Аудитория занята, попробуйте позже");
                     }
-
                 }
                 else {
                     sendMessage(chatId, "Ключ от данной аудитории не найден");
@@ -127,7 +128,7 @@ public class MessageHandler {
                 List<KeyRequest> requestList = keyRequestService.getAllRequests();
                 for (KeyRequest request : requestList) {
                     String data = "Запрос N" + request.getId() + "\nПользователь " + request.getUser ().getUsername() +
-                            " запрашивает ключ " + request.getAuditorium().getId() +
+                            " запрашивает ключ от аудитории " + request.getAuditorium().getId()  +
                             " до " + request.getExpectedReturnTimeInString() + "\n";
                     sendMessage(String.valueOf(adminId), data);
                 }

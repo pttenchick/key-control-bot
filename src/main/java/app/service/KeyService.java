@@ -1,6 +1,5 @@
 package app.service;
 
-import app.model.KeyRequest;
 import app.repository.AuditoriumRepository;
 import app.repository.KeyRequestRepository;
 import app.utils.MessageHandler;
@@ -181,19 +180,27 @@ public class KeyService implements IKeyService{
     public String formatKeyInfo(Key key) {
         if (key.isAvailable()){
             return String.format(
-                    "Ключ %d: Не выдан",
-                    key.getId()
+                    "Ключ %d от аудитории %d: Не выдан",
+                    key.getId(),
+                    key.getAuditorium().getId()
             );
         }
         else {
             return String.format(
-                    "Ключ %d: Выдан | Владелец: %s",
+                    "Ключ %d от аудитории %d: Выдан | Владелец: %s",
                     key.getId(),
+                    key.getAuditorium().getId(),
                     Optional.ofNullable(key.getUser())
                             .map(User::getUsername)
                             .orElse("Не выдан")
             );
         }
+    }
+
+
+    public Key getAvailableKeys(Long auditoriumId){
+       List<Key> list = keyRepository.findKeysByAuditoriumId(auditoriumId);
+      return list.get(0);
     }
 }
 

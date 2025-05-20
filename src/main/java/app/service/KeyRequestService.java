@@ -32,16 +32,16 @@ public class KeyRequestService {
     private AuditoriumRepository auditoriumRepository;
 
     @Transactional
-    public void requestKey(Long userId, Long keyId, LocalDateTime dateTimeString) {
+    public void requestKey(Long userId, Long AuditoriumId, LocalDateTime dateTimeString) {
         User user = userRepository.findById(String.valueOf(userId))
                 .orElseThrow(() -> new RuntimeException("User  not found"));
-        Key key = keyRepository.findById(String.valueOf(keyId))
+        Auditorium auditorium = auditoriumRepository.findById(String.valueOf(AuditoriumId))
                 .orElseThrow(() -> new RuntimeException("Key not found"));
-        Auditorium auditorium = auditoriumRepository.findById(String.valueOf(keyId))
+        Key key = keyRepository.findById(String.valueOf(AuditoriumId))
                 .orElseThrow(() -> new RuntimeException("Key not found"));
 
-        if (!key.isAvailable()) {
-            throw new RuntimeException("Key is not available");
+        if (auditorium.getKeys().isEmpty()) {
+            throw new RuntimeException("Аудитория занята, попробуйте позже");
         }
 
         KeyRequest keyRequest = KeyRequest.builder()

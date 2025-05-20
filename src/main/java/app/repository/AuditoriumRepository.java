@@ -8,4 +8,5 @@ import java.util.List;
 
 public interface AuditoriumRepository extends JpaRepository<Auditorium,String> {
 
+  public Auditorium getAuditoriumById(Long id);
 }

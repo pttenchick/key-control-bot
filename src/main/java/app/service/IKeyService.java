@@ -10,4 +10,5 @@ public interface IKeyService {
     Key issueKey(Long keyId, Long userId);
     Key returnKey(Long keyId);
     String formatKeyInfo(Key key);
+    Key getAvailableKeys(Long auditoriumId);
 }
