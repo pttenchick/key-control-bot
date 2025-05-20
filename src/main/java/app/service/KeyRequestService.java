@@ -1,0 +1,57 @@
+package app.service;
+
+import lombok.RequiredArgsConstructor;
+import app.model.Key;
+import app.model.KeyRequest;
+import app.model.User;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import app.repository.KeyRepository;
+import app.repository.KeyRequestRepository;
+import app.repository.UserRepository;
+
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Optional;
+
+@Service
+@RequiredArgsConstructor
+public class KeyRequestService {
+
+    @Autowired
+    private  KeyRequestRepository keyRequestRepository;
+    @Autowired
+    private  UserRepository userRepository;
+    @Autowired
+    private  KeyRepository keyRepository;
+
+    @Transactional
+    public void requestKey(Long userId, Long keyId, LocalDateTime dateTimeString) {
+        User user = userRepository.findById(String.valueOf(userId))
+                .orElseThrow(() -> new RuntimeException("User  not found"));
+        Key key = keyRepository.findById(String.valueOf(keyId))
+                .orElseThrow(() -> new RuntimeException("Key not found"));
+
+        if (!key.isAvailable()) {
+            throw new RuntimeException("Key is not available");
+        }
+
+        KeyRequest keyRequest = KeyRequest.builder()
+                .user(user)
+                .key(key)
+                .requestedAt(LocalDateTime.now())
+                .expectedReturnTime(dateTimeString)
+                .build();
+
+        this.keyRequestRepository.saveAndFlush(keyRequest);
+
+    }
+
+    public List<KeyRequest> getAllRequests() {
+        return keyRequestRepository.findAll();
+    }
+
+    public Optional<KeyRequest> findById(String id){ return  keyRequestRepository.findById(id);}
+}

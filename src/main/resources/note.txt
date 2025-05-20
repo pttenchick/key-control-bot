@@ -1,0 +1,99 @@
+1) Ошибка возникает на запросе /get_all_keys в MessageHandler. Так как я прошу выдать список ключей, но каждый ключ
+должен обладать владельцем, то появлвяется ошибка, если владелец не назначен. Исправить
+
+Было:
+
+// В KeyService.getAllKeys():
+keys.forEach(key -> {
+    String userInfo = key.getUser().getFullName(); // NPE если user=null
+});
+Стало:
+
+public String formatKeyInfo(Key key) {
+    return String.format(
+        "Ауд. %s, Ключ %d: %s | Владелец: %s",
+        key.getAudienceNumber(),
+        key.getId(),
+        key.getStatus(),
+        Optional.ofNullable(key.getUser())
+            .map(User::getFullName)
+            .orElse("Не выдан")
+    );
+}
+
+2) В БД время запроса записывается с милисекундами
+
+
+    @Scheduled(cron = "0 * * * * *")
+    public void sendReminders() {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime tenMinutesLater = now.plusMinutes(10);
+        List<Key> keysToReturn = keyRepository.findKeysToReturn(now, tenMinutesLater);
+
+        for (Key key : keysToReturn) {
+            // Проверяем, что уведомление еще не отправлялось и есть пользователь
+            if (!key.getTen() && key.getUser() != null) {
+                try {
+                    String chatId = String.valueOf(key.getUser().getId());
+                    String message = "Напоминание: Ключ " + key.getId() + " нужно вернуть через 10 минут.";
+                    messageHandler.sendMessage(chatId, message);
+                    key.setTen(true);
+                } catch (Exception e) {
+                    // Логируем ошибку, но не прерываем выполнение
+                    logger.error("Ошибка отправки уведомления для ключа {}", key.getId(), e);
+                } finally {
+                    keyRepository.saveAndFlush(key);
+                }
+            }
+        }
+    }
+
+    @Scheduled(cron = "0 * * * * *")
+    public void checkKeysAtReturnTime() {
+        LocalDateTime currentTime = LocalDateTime.now();
+        // Используем временное окно в 1 минуту для надежности
+        LocalDateTime windowStart = currentTime.minusSeconds(30);
+        LocalDateTime windowEnd = currentTime.plusSeconds(30);
+
+        List<Key> keysAtReturnTime = keyRepository.findKeysAtReturnTime(windowStart, windowEnd);
+
+        for (Key key : keysAtReturnTime) {
+            if (!key.getNow() && key.getUser() != null) {
+                try {
+                    String chatId = String.valueOf(key.getUser().getId());
+                    String message = "Внимание: Ключ " + key.getId() + " должен быть возвращен сейчас.";
+                    messageHandler.sendMessage(chatId, message);
+                    key.setNow(true);
+                } catch (Exception e) {
+                    logger.error("Ошибка отправки уведомления для ключа {}", key.getId(), e);
+                } finally {
+                    keyRepository.saveAndFlush(key);
+                }
+            }
+        }
+    }
+
+    @Scheduled(cron = "0 * * * * *")
+    public void checkLateKeys() {
+        LocalDateTime thirtyMinutesAgo = LocalDateTime.now().minusMinutes(30);
+        List<Key> lateKeys = keyRepository.findLateKeys(thirtyMinutesAgo);
+
+        for (Key key : lateKeys) {
+            if (!key.getLastThirty() && key.getUser() != null) {
+                try {
+                    String chatId = String.valueOf(key.getUser().getId());
+                    String message = "Внимание: Ключ " + key.getId() + " просрочен на 30 минут.";
+                    messageHandler.sendMessage(chatId, message);
+                    key.setLastThirty(true);
+                } catch (Exception e) {
+                    logger.error("Ошибка отправки уведомления для ключа {}", key.getId(), e);
+                } finally {
+                    keyRepository.saveAndFlush(key);
+                }
+            }
+        }
+    }
+
+
+
+    4) Добавление возможности для админа редактировать запросы
