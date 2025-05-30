@@ -14,7 +14,6 @@ import app.repository.KeyRequestRepository;
 import app.repository.UserRepository;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 
@@ -32,7 +31,7 @@ public class KeyRequestService {
     private AuditoriumRepository auditoriumRepository;
 
     @Transactional
-    public void requestKey(Long userId, Long AuditoriumId, LocalDateTime dateTimeString) {
+    public void createRequestKey(Long userId, Long AuditoriumId, LocalDateTime dateTimeString) {
         User user = userRepository.findById(String.valueOf(userId))
                 .orElseThrow(() -> new RuntimeException("User  not found"));
         Auditorium auditorium = auditoriumRepository.findById(String.valueOf(AuditoriumId))
@@ -55,9 +54,32 @@ public class KeyRequestService {
 
     }
 
+    @Transactional
+    public KeyRequest updateKeyRequest(Long keyRequestId, Long auditoriumId, LocalDateTime expectedReturnTime) {
+        KeyRequest keyRequest = keyRequestRepository.findById(String.valueOf(keyRequestId))
+                .orElseThrow(() -> new RuntimeException("KeyRequest not found"));
+
+        Auditorium auditorium = auditoriumRepository.findById(String.valueOf(auditoriumId))
+                .orElseThrow(() -> new RuntimeException("Auditorium not found"));
+
+        keyRequest.setAuditorium(auditorium);
+        keyRequest.setExpectedReturnTime(expectedReturnTime);
+
+        return keyRequestRepository.save(keyRequest);
+    }
+
+    @Transactional
+    public void deleteKeyRequest(Long keyRequestId) {
+        KeyRequest keyRequest = keyRequestRepository.findById(String.valueOf(keyRequestId))
+                .orElseThrow(() -> new RuntimeException("KeyRequest not found"));
+
+        keyRequestRepository.delete(keyRequest);
+    }
+
     public List<KeyRequest> getAllRequests() {
         return keyRequestRepository.findAll();
     }
 
     public Optional<KeyRequest> findById(String id){ return  keyRequestRepository.findById(id);}
+
 }

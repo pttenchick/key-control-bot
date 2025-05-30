@@ -25,4 +25,8 @@ public class User {
 
     @OneToMany(mappedBy = "user")
     private List<Key> keys;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Condition condition = Condition.NONE;
 }
