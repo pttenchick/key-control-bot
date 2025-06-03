@@ -11,4 +11,5 @@ public interface IKeyService {
     Key returnKey(Long keyId);
     String formatKeyInfo(Key key);
     Key getAvailableKeys(Long auditoriumId);
+    void deleteKey(Long id);
 }

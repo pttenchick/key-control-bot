@@ -27,6 +27,6 @@ public class User {
     private List<Key> keys;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column
     private Condition condition = Condition.NONE;
 }

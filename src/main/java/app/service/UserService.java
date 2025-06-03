@@ -1,4 +1,5 @@
 package app.service;
+import app.model.Condition;
 import lombok.RequiredArgsConstructor;
 import app.model.User;
 import org.springframework.stereotype.Service;
@@ -24,6 +25,13 @@ public class UserService {
 
     public User getUserById(Long userId) {
         return userRepository.findById(String.valueOf(userId)).orElseThrow(() -> new RuntimeException("User  not found"));
+    }
+
+    public void setCondition(Condition condition, Long chatId){
+        User user = userRepository.getUserById(chatId);
+
+        user.setCondition(condition);
+        userRepository.saveAndFlush(user);
     }
 }
 

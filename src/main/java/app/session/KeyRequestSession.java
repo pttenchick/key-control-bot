@@ -8,10 +8,17 @@ public class KeyRequestSession extends MySession {
 
    private KeyRequest keyRequest;
 
-   public KeyRequestSession(){
+   public KeyRequestSession(KeyRequest keyRequest, Long chatId){
       super();
-      this.keyRequest = new KeyRequest();
-      setChatId(keyRequest.getUser().getId());
+      this.keyRequest = keyRequest;
+      setChatId(chatId);
+   }
+
+   public KeyRequestSession(KeyRequest keyRequest, int step){
+      super();
+      this.keyRequest = keyRequest;
+      setChatId(this.keyRequest.getUser().getId());
+      setStep(step);
    }
 
 }

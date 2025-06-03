@@ -37,6 +37,10 @@ public class KeyService implements IKeyService{
     @Lazy
     private MessageHandler messageHandler;
 
+    @Override
+    public void deleteKey(Long id){
+        keyRepository.deleteById(String.valueOf(id));
+    }
 
     @Override
     public List<Key> getAllKeys() {
@@ -138,7 +142,7 @@ public class KeyService implements IKeyService{
                 try {
                     String chatId = String.valueOf(key.getUser().getId());
                     String message = "Внимание: Ключ " + key.getId() + " должен быть возвращен сейчас.";
-                    messageHandler.sendMessage(chatId, message);
+                    messageHandler.sendMessage(Long.valueOf(chatId), message);
                 }catch (Exception e){
                     logger.error("Ошибка отправки уведомления для ключа {}", key.getId(), e);
                 }
@@ -152,7 +156,7 @@ public class KeyService implements IKeyService{
                 try {
                 String chatId = String.valueOf(key.getUser().getId());
                 String message = "Напоминание: Ключ " + key.getId() + " нужно вернуть через 10 минут.";
-                messageHandler.sendMessage(chatId, message);
+                messageHandler.sendMessage(Long.valueOf(chatId), message);
             } catch (Exception e) {
                 // Логируем ошибку, но не прерываем выполнение
                 logger.error("Ошибка отправки уведомления для ключа {}", key.getId(), e);
@@ -166,7 +170,7 @@ public class KeyService implements IKeyService{
                 try {
                     String chatId = String.valueOf(key.getUser().getId());
                     String message = "Напоминание: Ключ " + key.getId() + " просрочен на 30 минут.";
-                    messageHandler.sendMessage(chatId, message);
+                    messageHandler.sendMessage(Long.valueOf(chatId), message);
                 } catch (Exception e) {
                     // Логируем ошибку, но не прерываем выполнение
                     logger.error("Ошибка отправки уведомления для ключа {}", key.getId(), e);
